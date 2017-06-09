@@ -10,6 +10,7 @@ import ReactDOM from 'react-dom';
 ReactDOM.render(
   <div>
     <canvas id="mainCanvas" />
+    <img id="bluePattern" src="https://raw.githubusercontent.com/jrleja0/Tile-Abstraction/master/Blue%20Tile.jpeg" />
     <img id="greenPattern" src="https://raw.githubusercontent.com/jrleja0/Tile-Abstraction/master/Green%20Tile.jpeg" />
     <img id="yellowPattern" src="https://raw.githubusercontent.com/jrleja0/Tile-Abstraction/master/Yellow%20Tile.jpeg" />
     </div>,

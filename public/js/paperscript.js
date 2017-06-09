@@ -1,39 +1,55 @@
-/* global Group, Path, Point, project, Raster, Symbol, view */
+/* global Group, Path, Point, project, Raster, Symbol, Tool, view */
 import paper, { Symbol } from '../../node_modules/paper/dist/paper-full.min.js';
 
+// initializing program
 window.onload = () => {
   paper.install(window);
   paper.setup('mainCanvas');
-  console.log('running');
-  console.log('w:', view.size.width, '&& h:', view.size.height);
+  console.log('running-- w:', view.size.width, '&& h:', view.size.height);
 
-  const circle = new Path.Circle(new Point(100, 100), 50);
-  circle.strokeColor = 'black';
-  circle.fillColor = 'red';
+  // demo of basic circle
+  //const circle = new Path.Circle(new Point(100, 100), 50);
+  // circle.strokeColor = 'black';  // circle.fillColor = 'red';  // circle.fitBounds(view.bounds, true);
 
+  // creating green background
   const greenBackground = new Raster('greenPattern');
-  // greenBackground.position = view.center;
-  // greenBackground.scale(2.5);
   greenBackground.fitBounds(view.bounds, true);
+  // greenBackground.position = view.center;  // greenBackground.scale(2.5);
 
-  const yellowBackground = new Raster('yellowPattern');
+  // creating yellow and blue symbols
+  const createCircleSymbol = (color) => {
+    const circle = new Path.Circle(new Point(100, 100), 50);
+    const colorBackground = new Raster(color);
+    colorBackground.scale(0.25);
+    // masking colorBackground onto circle
+    const colorCircleGroup = new Group({
+      children: [circle, colorBackground],
+      clipped: true
+    });
+    circle.fitBounds(colorBackground.bounds);
+    return new Symbol(colorCircleGroup);
+  };
 
-  yellowBackground.position = view.size.multiply(Point.random());
-  yellowBackground.scale(0.25);
-  // masking yellowBackground onto circle
-  const group0 = new Group({
-    children: [circle, yellowBackground],
-    clipped: true
-  });
-  circle.fitBounds(yellowBackground.bounds);
+  const yellowSymbol = createCircleSymbol('yellowPattern');
+  const blueSymbol = createCircleSymbol('bluePattern');
 
-  const yellowSymbol = new Symbol(group0);
-
-
+  // populate symbol objects
   const seedSymbols = () => {
     yellowSymbol.place(view.size.multiply(Point.random()));
   };
 
+  const tool = new Tool();
+  tool.onMouseUp = (e) => {
+    // replace selected symbol with different color symbol
+    let hitResult = project.activeLayer.hitTest(e.point);
+    console.log(hitResult.item._index);   // hitResult.item shows _id and _index (in layer)
+    if (hitResult.item._index !== 0) {
+      hitResult.item.remove();
+      console.log(e.point);
+    }
+    blueSymbol.place(e.point);
+    // let hitResult = project.hitTest(e.point, { match: yellowSymbol }); // does not work
+  };
 
   let fading = true;
   view.onFrame = (e) => {
@@ -45,7 +61,7 @@ window.onload = () => {
         let symbol = project.activeLayer.children[i];
         symbol.newPointX = Math.random() * 10 - 5;
         symbol.newPointY = Math.random() * 10 - 5;
-        console.log(symbol.newPointX);
+        // console.log(symbol.newPointX);
       }
     }
     if (e.count > 39) {
