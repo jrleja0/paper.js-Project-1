@@ -9516,80 +9516,87 @@ var _paperFullMin2 = _interopRequireDefault(_paperFullMin);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-// initializing program
+// initializing program ////
 window.onload = function () {
   _paperFullMin2.default.install(window);
   _paperFullMin2.default.setup('mainCanvas');
   console.log('running-- w:', view.size.width, '&& h:', view.size.height);
 
-  // demo of basic circle
-  //const circle = new Path.Circle(new Point(100, 100), 50);
-  // circle.strokeColor = 'black';  // circle.fillColor = 'red';  // circle.fitBounds(view.bounds, true);
-
-  // creating green background
+  //// creating green background ////
   var greenBackground = new Raster('greenPattern');
   greenBackground.fitBounds(view.bounds, true);
   // greenBackground.position = view.center;  // greenBackground.scale(2.5);
 
-  // creating yellow and blue symbols
+  //// creating yellow and blue symbols ////
   var createCircleSymbol = function createCircleSymbol(color) {
-    var circle = new Path.Circle(new Point(100, 100), 50);
+    var circle = new Path.Circle(new Point(100, 100), 60);
     var colorBackground = new Raster(color);
     colorBackground.scale(0.25);
-    // masking colorBackground onto circle
+    //// cropping/masking colorBackground onto circle ////
     var colorCircleGroup = new Group({
       children: [circle, colorBackground],
       clipped: true
     });
-    circle.fitBounds(colorBackground.bounds);
+    colorBackground.fitBounds(circle.bounds);
     return new _paperFullMin.Symbol(colorCircleGroup);
+    // return new Symbol(colorBackground);  /// return for square symbol, not circular.
   };
-
   var yellowSymbol = createCircleSymbol('yellowPattern');
   var blueSymbol = createCircleSymbol('bluePattern');
 
-  // populate symbol objects
-  var seedSymbols = function seedSymbols() {
+  //// populate symbol objects ////
+  var seedYellowSymbol = function seedYellowSymbol() {
     yellowSymbol.place(view.size.multiply(Point.random()));
   };
+  var seedBlueSymbol = function seedBlueSymbol() {
+    blueSymbol.place(view.size.multiply(Point.random()));
+  };
 
+  //// basic onMouseDown tool ////
   var tool = new Tool();
-  tool.onMouseUp = function (e) {
-    // replace selected symbol with different color symbol
+  tool.onMouseDown = function (e) {
+    //// replace selected symbol with different color symbol ////
     var hitResult = project.activeLayer.hitTest(e.point);
     console.log(hitResult.item._index); // hitResult.item shows _id and _index (in layer)
     if (hitResult.item._index !== 0) {
       hitResult.item.remove();
-      console.log(e.point);
     }
-    blueSymbol.place(e.point);
-    // let hitResult = project.hitTest(e.point, { match: yellowSymbol }); // does not work
   };
 
   var fading = true;
   view.onFrame = function (e) {
-    //** seed and move the yellow symbols **//
-    if (e.count < 31) seedSymbols();
-    if (e.count > 20) yellowSymbol.definition.rotate(1);
+    // console.log(e.count);
+    //// seed the yellow and blue symbols ////
+    if (e.count < 31) {
+      e.count % 5 === 0 ? seedBlueSymbol() : seedYellowSymbol();
+    }
+    // symbols begin to rotate
+    if (e.count > 20) {
+      yellowSymbol.definition.rotate(1);
+      blueSymbol.definition.rotate(-3);
+    }
+    // symbols begin to move in random directions
+    // saving newPointX and newPointY to each symbol obj instance, so that symbol instance goes in a particular direction in each frame.
+    // direction will be reassigned every 20 frames.
     if (e.count > 39 && e.count % 20 === 0) {
       for (var i = 4; i < project.activeLayer.children.length; i++) {
         // forEach will not work properly.
         var symbol = project.activeLayer.children[i];
+        // assign points between -5 and +5, every 20 frames:
         symbol.newPointX = Math.random() * 10 - 5;
         symbol.newPointY = Math.random() * 10 - 5;
-        // console.log(symbol.newPointX);
       }
     }
+    // change symbols' positions
     if (e.count > 39) {
-      // idea: saving newPointX and newPointY to each symbol obj, so that symbol always goes in a particular direction...
       for (var _i = 1; _i < project.activeLayer.children.length; _i++) {
         var _symbol = project.activeLayer.children[_i];
         _symbol.position.x += _symbol.newPointX;
         _symbol.position.y += _symbol.newPointY;
-        // symbol.position.x += symbol.bounds.width / 20;
+        // symbol.position.x += symbol.bounds.width / 20; // uncomment to have all symbols move to the right.
       }
     }
-    //** green background fades in and out **//
+    //// green background fades in and out ////
     if (greenBackground.opacity < 0.05) fading = false;
     if (greenBackground.opacity > 0.95) fading = true;
     fading ? greenBackground.opacity -= 0.003 : greenBackground.opacity += 0.003;
